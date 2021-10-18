@@ -28,48 +28,109 @@ class ViewController: UIViewController {
 
      
         let t = Test_user(["name":"12312313123"])
-        print(t.toJson())
+        let t1 = Test_user(t.toJson())
+        print("地址为: \(Unmanaged<AnyObject>.passUnretained(t as! AnyObject).toOpaque())")
+        print("地址为: \(Unmanaged<AnyObject>.passUnretained(t1 as! AnyObject).toOpaque())")
         print("===============")
 
    
         cache = t
         print(cache?.name)
         print("===============")
-                
-        $users.name = "1"
-        print(users)
-        print(allUser)
+              
+//        usersInsert.run([t])
+    
+
+        t.name = "wwww"
+        usesmee = [t,t1]
+       
+        print(usesmee?.first?.name)
+        print("===============")
         
-//        DispatchQueue.global().async {
-//            print("1111111111111111\(Thread.current)")
-//            print(self.$list.run())
-//            print("555555")
-//
-//        }
+//        server.insert([t])
 
         
+        let user = server.selectOne(Test_user.self) {
+            return $0.$name == "wwww"
+        }
         
+        print(user?.name)
         
-         
+        let pa = ["name":"wwww","age":"w"]
+        var array = ["name","=","wwww","and","age","=","wwww"]
+        var stack = [String]()
+        while array.count > 0 {
+            let p = array[0]
+            stack.append(p)
+            array.removeFirst()
+            if stack.count > 2 && stack[1] == "="{
+                if let p =  pa[stack[0]] {
+                    if  stack[1] == "="  && p == stack[2]{
+                        
+                        stack.removeAll()
+                        stack.append("yes")
+                    }else{
+                        stack.removeAll()
+                        stack.append("no")
+                        
+                    }
+                }else{
+                    print("no")
+                    return
+                }
+            }
+            if stack.count > 1 && stack[1] == "or" {
+                if stack[0] == "yes" {
+                    print("yes")
+                    return
+                }else {
+                    stack.removeAll()
+                }
+            }
+            if stack.count > 1 && stack[1] == "and" {
+                if stack[0] == "no" {
+                    print("no")
+                    return
+                }else {
+                    stack.removeAll()
+                }
+            }
+            if stack.count == 1 && array.count == 0{
+                if stack[0] == "yes" {
+                    print("yes")
+                    return
+                }else if stack[0] == "no"{
+                    print("no")
+                    return
+                }
+            }
+        }
+
+//        co.run()
+
 //        GCDTest4()
 
     }
     
-   
+    let co = Coroutine()
+    
+    @DBServer("Test_user")
+    var server:DBServer
+    
+    @Memory("users",Test_user.self)
+    var usesmee:[Test_user]?
+    
+    
+    @Memory("sdfsdf")
+    var strinssss:[Int]?
     
     @Memory("ca",Test_user.self)
     var cache:Test_user?
     
-    @DBSelect("Test_user",Test_user.self)
-    var users:[Test_user]?
-    
-    @DBSelectAll("Test_user",Test_user.self)
-    var allUser:[Test_user]?
     
     
     func GCDTest4() {
         let group = DispatchGroup.init()
-        let queue = DispatchQueue.global()
         //剩余10个车位
         let semaphore = DispatchSemaphore.init(value: 10)
         for i in 1...100 {
@@ -77,13 +138,16 @@ class ViewController: UIViewController {
             //来了一辆车，信号量减1
             let result = semaphore.wait(timeout: .distantFuture)
             if result == .success {
-                queue.async(group: group, execute: {
+                DispatchQueue.global().async(group: group, execute: {
                     print("队列执行\(i)--\(Thread.current)")
                     //模拟执行任务时间
                     sleep(3)
+
                     //延迟3s后,走了一辆车，信号量+1
                     semaphore.signal()
                 })
+                
+               
             }
         }
         group.wait()
@@ -93,23 +157,24 @@ class ViewController: UIViewController {
    
 
 }
+
 class Test_user:JsonProtocol{
     
     @DBJSON("Test_user","name")
     var name:String?
     
-    @DBJSON("Test_user","name")
+    @DBJSON("Test_user","age")
     var age:String?
     
-    
+    init() {}
     required init (_ data:[String:Any]?) {
-        $name?.setJson(data)
-        $age?.setJson(data)
+        $name.setJson(data)
+        $age.setJson(data)
 
     }
     func toJson() -> [String:Any]?{
         
-        return mergeMap($name?.getJson(),$age?.getJson())
+        return mergeMap($name.getJson(),$age.getJson())
     }
     
 }

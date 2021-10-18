@@ -1,5 +1,5 @@
 //
-//  WJSON.swift
+//  DMJSON.swift
 //  Test
 //
 //  Created by wyy on 2021/9/14.
@@ -10,7 +10,7 @@ import Metal
 
 
 @dynamicMemberLookup
-class WJSON{
+class DMJSON{
     private var orData:Any?
     private var cuData:Any?
     init(_ value:Any?) {
@@ -29,7 +29,7 @@ class WJSON{
         }
     }
    
-    subscript(dynamicMember member:String) -> WJSON{
+    subscript(dynamicMember member:String) -> DMJSON{
     
         analysis(member)
         return self
@@ -39,14 +39,14 @@ class WJSON{
 
 
 //MARK: -- 转换基本数据类型
-extension WJSON {
-    var array:[WJSON]{
+extension DMJSON {
+    var array:[DMJSON]{
         get{
-            var list = [WJSON]()
+            var list = [DMJSON]()
             if let data = cuData {
                 if let array = data as? [Any] {
                     for item in array{
-                        list.append(WJSON(item))
+                        list.append(DMJSON(item))
                     }
                 }
             }
@@ -54,13 +54,13 @@ extension WJSON {
             return list
         }
     }
-    var dictionary:[String:WJSON]{
+    var dictionary:[String:DMJSON]{
         get{
-            var dic = [String:WJSON]()
+            var dic = [String:DMJSON]()
             if let data = cuData {
                 if let da = data as? [String:Any] {
                     for (k,v) in da {
-                        dic[k] = WJSON(v)
+                        dic[k] = DMJSON(v)
                     }
                 }
             }
@@ -130,7 +130,7 @@ extension WJSON {
 }
 
 //MARK: -- 类型判断解析json
-fileprivate extension WJSON {
+fileprivate extension DMJSON {
     func toJson(_ data:Any){
         cuData = orData
     }

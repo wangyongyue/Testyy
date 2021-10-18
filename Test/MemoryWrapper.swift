@@ -39,6 +39,8 @@ class Userdefault<T> {
     
 }
 
+
+
 @propertyWrapper
 class Memory<T> {
     let key:String
@@ -68,16 +70,11 @@ class Memory<T> {
         set {
             if let value = newValue {
                 KVMemory.instance.set(key, value)
-                defaultValue = nil
             }
-            
+            defaultValue = nil
         }
     }
-    var projectedValue:Memory{
-        get{return self}
-        set{}
-    }
-    
+   
 }
 //数据缓存，内存中
 class KVMemory {
@@ -117,6 +114,7 @@ class KVMemory {
         if let te = temp{
             hashTable.updateValue(te, forKey: key)
         }
+        
     }
     func get<T>(_ key:AnyHashable,_ type:JsonProtocol.Type) ->T?{
         
@@ -137,6 +135,7 @@ class KVMemory {
                 }
             }
         }
+        
         return value as? T
     }
     

@@ -9,11 +9,31 @@ import UIKit
 
 
 //MARK: --  数据库定义普通字段 和 json和model互转
+extension DBJSON {
+    func run(_ a:String,_ b:Any) {
+        
+        print(a,b)
+    }
+    static func == (r:DBJSON,x:Any) -> DBJSON{
+        
+        r.condition = "\(r.key) = '\(x)'"
+        return r
+    }
+    static func || (r:DBJSON,x:DBJSON) -> DBJSON{
+        
+        r.condition = "\(r.condition) || \(x.condition)"
+        return r
+    }
+    
+   
+}
+
 @propertyWrapper
 class DBJSON<T> {
     var key:String
     var table:String?
-    
+    var condition:String = ""
+
     init(_ key: String){
         self.key = key
     }
@@ -29,7 +49,7 @@ class DBJSON<T> {
         get {return defaultValue}
         set {defaultValue = newValue}
     }
-    var projectedValue:DBJSON?{
+    var projectedValue:DBJSON{
         get{return self}
         set{}
     }
@@ -44,148 +64,100 @@ class DBJSON<T> {
         defaultValue = json?[key] as? T
     }
 }
-//MARK: --  动态参数
-
-@dynamicMemberLookup
-class DBParams {
-    var params = [String: Any]()
-    subscript<T>(dynamicMember member: String)  -> T? where T: Any {
-        get { params[member] as? T }
-        set { params[member] = newValue }
-    }
-}
 
 
 //MARK: --  数据库增，删，改，查
 
+
 @propertyWrapper
-class DBInsert{
+class DBServer{
+    
     private var table:String
+    
     init(_ table:String){
         self.table = table
     }
-    var wrappedValue: DBInsert{
+    var wrappedValue:DBServer{
         get {return self}
         set {}
     }
-    func run(_ data:[JsonProtocol]) -> Bool{
+    
+    private var cacheTable = [Any]()
+}
+//buff
+fileprivate extension DBServer {
+    
+    func setCacheMap(){
+        
+    }
+}
+//接口
+extension DBServer {
+    
+    func selectOne<T>(_ type:T.Type,_ condition:(T)->Any) -> T?{
+        if let an = analysisType(type,condition) {
+            return DBSQL.select(table, an.0, an.1)?.first as? T
+        }
+       return nil
+    }
+    func select<T>(_ type:T.Type,_ condition:(T)->Any) -> [T]?{
+        
+        if let an = analysisType(type,condition) {
+            return DBSQL.select(table, an.0, an.1) as? [T]
+        }
+        return nil
+    }
+    
+    @discardableResult
+    func insert(_ data:[JsonProtocol]) -> Bool{
         return DBSQL.insert(table, data)
     }
     
-}
-@propertyWrapper
-class DBUpate:DBParams{
-    var table:String
-    var type:JsonProtocol.Type
-    init(_ table:String,_ type:JsonProtocol.Type){
-        self.table = table
-        self.type = type
+    @discardableResult
+    func update<T>(_ type:T.Type,_ condition:(T)->Any,_ data:[JsonProtocol]) -> Bool{
+        if let an = analysisType(type,condition) {
+            return DBSQL.update(table, data, an.1)
+        }
+        return false
     }
     
-    var wrappedValue: DBUpate{
-        get {return self}
-        set {}
+    @discardableResult
+    func delete<T>(_ type:T.Type,_ condition:(T)->Any) -> Bool{
+        if let an = analysisType(type,condition) {
+            return DBSQL.delete(table, an.1)
+        }
+        return false
     }
-    func run(_ data:[JsonProtocol]) -> Bool{
-        return DBSQL.update(table, data, params)
-    }
-}
-
-@propertyWrapper
-class DBDelete:DBParams{
-    var table:String
-    init(_ table:String){
-        self.table = table
-    }
-    var wrappedValue: DBDelete{
-        get {return self}
-        set {}
-    }
-    func run(_ data:[JsonProtocol]) -> Bool{
-        return DBSQL.delete(table, params)
-    }
-}
-
-@propertyWrapper
-class DBDeleteAll:DBParams{
-    var table:String
-    init(_ table:String){
-        self.table = table
-    }
-    var wrappedValue: DBDeleteAll{
-        get {return self}
-        set {}
-    }
-    func run(_ data:[JsonProtocol]) -> Bool{
-        return DBSQL.deleteAll(table)
-    }
-}
-@propertyWrapper
-class DBSelect<T>:DBParams{
-    private var table:String
-    private var type:JsonProtocol.Type
     
-    init(_ table:String,_ type:JsonProtocol.Type){
-        self.table = table
-        self.type = type
+    @discardableResult
+    func drop() -> Bool{
+        return DBSQL.drop(table)
     }
-    private var result:T?
-    var wrappedValue: T?{
-        get {
-            if result == nil {
-                if let list = DBSQL.select(table, type, params) {
-                    result = list as? T
-                }
+    
+    
+}
+fileprivate extension DBServer {
+    
+    func  analysisType<T>(_ t:T.Type,_ condition:(T)->Any) -> (JsonProtocol.Type,String)? {
+        if let t1 = t as?  JsonProtocol.Type {
+            let ob = t1.init([:])
+            let co  = condition(ob as! T)
+            if let c = co as? DBJSON<String> {
+                print(c.condition)
+                return (t1,c.condition)
+            }else if let c = co as? DBJSON<Int> {
+                print(c.condition)
+                return (t1,c.condition)
+            }else if let c = co as? DBJSON<Float> {
+                print(c.condition)
+                return (t1,c.condition)
+            }else if let c = co as? DBJSON<Double> {
+                print(c.condition)
+                return (t1,c.condition)
             }
-            return result
         }
-        set {result = nil}
+        return nil
     }
-    
-    var projectedValue:DBSelect{
-        get{return self}
-        set{}
-    }
-
 }
 
-@propertyWrapper
-class DBSelectAll<T>{
-    private var table:String
-    private var type:JsonProtocol.Type
-    init(_ table:String,_ type:JsonProtocol.Type){
-        self.table = table
-        self.type = type
-    }
-    var result:T?
-    var wrappedValue: T?{
-        get {
-            if result == nil {
-                if let list = DBSQL.selectAll(table, type) {
-                    result = list as? T
-                }
-            }
-            return result
-        }
-        set {
-            result = nil
-        }
-    }
-
-    
-}
-
-@propertyWrapper
-class DBDrop{
-    private var table:String
-    init(_ table:String){
-        self.table = table
-    }
-    var wrappedValue: Bool{
-        get {
-            return DBSQL.drop(self.table)
-        }
-        set {}
-    }
-}
 

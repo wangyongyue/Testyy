@@ -20,6 +20,7 @@
 		009EE09526AFED6200365999 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 009EE09326AFED6200365999 /* LaunchScreen.storyboard */; };
 		009EE0A026AFED6200365999 /* TestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 009EE09F26AFED6200365999 /* TestTests.swift */; };
 		009EE0AB26AFED6200365999 /* TestUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 009EE0AA26AFED6200365999 /* TestUITests.swift */; };
+		00BAA942271139A1003EDE76 /* Coroutine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BAA941271139A1003EDE76 /* Coroutine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +60,7 @@
 		009EE0A626AFED6200365999 /* TestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		009EE0AA26AFED6200365999 /* TestUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUITests.swift; sourceTree = "<group>"; };
 		009EE0AC26AFED6200365999 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		00BAA941271139A1003EDE76 /* Coroutine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coroutine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +119,7 @@
 				0073952A27001252000AB73E /* DBWrapper.swift */,
 				0040B20026F08A47002B853D /* DBSQL.swift */,
 				0040B1FC26F08A2C002B853D /* WJSON.swift */,
+				00BAA941271139A1003EDE76 /* Coroutine.swift */,
 				009EE08E26AFED5F00365999 /* Main.storyboard */,
 				009EE09126AFED6200365999 /* Assets.xcassets */,
 				009EE09326AFED6200365999 /* LaunchScreen.storyboard */,
@@ -280,6 +283,7 @@
 				0073952B27001252000AB73E /* DBWrapper.swift in Sources */,
 				0073952927001246000AB73E /* JSONWrapper.swift in Sources */,
 				009EE08926AFED5F00365999 /* AppDelegate.swift in Sources */,
+				00BAA942271139A1003EDE76 /* Coroutine.swift in Sources */,
 				009EE08B26AFED5F00365999 /* SceneDelegate.swift in Sources */,
 				0040B20126F08A47002B853D /* DBSQL.swift in Sources */,
 			);

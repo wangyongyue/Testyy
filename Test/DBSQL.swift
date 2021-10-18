@@ -30,6 +30,7 @@ extension DBSQL {
                     isHave = true
                 }
             }
+            
             if isHave == false && alter(table, key){
                 var list = keys
                 list.append(key)
@@ -37,7 +38,9 @@ extension DBSQL {
                     UserDefaults.standard.setValue(list, forKey: table)
                 }
             }
+            
         }else{
+            
             if create(table) {
                 sql_queue.sync {
                     UserDefaults.standard.setValue(["t_id"], forKey: table)
@@ -53,25 +56,19 @@ extension DBSQL {
     
    static func create(_ tableName:String) -> Bool {
         var res = false
-        sql_queue.sync {
-
-            let sql = "create table if not exists \(tableName) (t_id integer)"
-            res = instance.exec(sql)
-        }
+        let sql = "create table if not exists \(tableName) (t_id integer)"
+        res = instance.exec(sql)
         return res
     }
     
     static func alter(_ tableName:String,_ key:String) -> Bool {
         var res = false
-        sql_queue.sync {
-
-            let q_sql = "SELECT * from sqlite_master where name = '\(tableName)' and sql like '%\(key)%'"
-            if instance.queryCount(q_sql) >= 1 {
-                res = true
-            }
-            let sql = "alter table \(tableName) add \(key) text"
-            res = instance.exec(sql)
+        let q_sql = "SELECT * from sqlite_master where name = '\(tableName)' and sql like '%\(key)%'"
+        if instance.queryCount(q_sql) >= 1 {
+            res = true
         }
+        let sql = "alter table \(tableName) add \(key) text"
+        res = instance.exec(sql)
         return res
     }
     
@@ -85,82 +82,73 @@ extension DBSQL{
     static func drop(_ tableName:String) -> Bool {
         
         var res = false
-        sql_queue.sync {
-
-            //删除本地缓存表
-            UserDefaults.standard.removeObject(forKey: tableName)
-
-            let sql = "drop table \(tableName)"
-            res = instance.exec(sql)
-        }
+        //删除本地缓存表
+        UserDefaults.standard.removeObject(forKey: tableName)
+        let sql = "drop table \(tableName)"
+        res = instance.exec(sql)
         return res
     }
     static func paramsToKeysAndValues(_ params:[String:Any]) -> (keys:[String],values:[Any]){
         
         var keys = [String]()
         var values = [Any]()
+        if params.isEmpty {
+            return (keys,values)
+        }
         for (k,v) in params{
             keys.append(k)
             values.append(v)
         }
         return (keys,values)
     }
-    static func delete(_ tableName:String,_ params:[String:Any]) -> Bool {
+    static func delete(_ tableName:String,_ condition:String) -> Bool {
         var res = false
         sql_queue.sync {
-            res = instance.deleteJson(tableName, keys: paramsToKeysAndValues(params).keys, values: paramsToKeysAndValues(params).values)
+            res = instance.deleteJson(tableName, condition)
         }
         return res
     }
-    static func deleteAll(_ tableName:String) -> Bool {
-        var res = false
-        sql_queue.sync {
-            res = instance.deleteAllJson(tableName)
-        }
-        return res
-    }
+    
     static func insert(_ tableName:String,_ data:[JsonProtocol]) -> Bool {
         
         var res = false
         sql_queue.sync {
+            instance.beginTransaction()
             for item in data {
                 if let json = item.toJson() {
                     res = instance.insertJson(tableName, json)
                 }
             }
+            instance.commitTransaction()
         }
         return res
     }
     
-    static func update(_ tableName:String,_ data:[JsonProtocol],_ params:[String:Any]) -> Bool {
+    static func update(_ tableName:String,_ data:[JsonProtocol],_ condition:String) -> Bool {
         
         var res = false
         sql_queue.sync {
+            instance.beginTransaction()
             for item in data {
                 if let json = item.toJson() {
-                    res = instance.updateJson(tableName, paramsToKeysAndValues(params).keys, paramsToKeysAndValues(params).values,json)
+                    res = instance.updateJson(tableName,json,condition)
                 }
             }
+            instance.commitTransaction()
+
         }
         return res
     }
     
-    static func selectAll(_ tableName:String,_ type:JsonProtocol.Type) -> [JsonProtocol]?{
+   
+    static func select(_ tableName:String,_ type:JsonProtocol.Type,_ condition:String) -> [JsonProtocol]?{
         var res:[JsonProtocol]?
         sql_queue.sync {
-            res = instance.getList(instance.selectAllJson(tableName), type)
+            res = instance.getList(instance.selectJson(tableName, type,condition), type)
         }
+        
         return res
     }
-    
-    static func select(_ tableName:String,_ type:JsonProtocol.Type,_ params:[String:Any]) -> [JsonProtocol]?{
-        var res:[JsonProtocol]?
-        sql_queue.sync {
-            res = instance.getList(instance.selectJson(tableName, type, paramsToKeysAndValues(params).keys, paramsToKeysAndValues(params).values), type)
-        }
-        return res
-    }
-    
     
 }
 //sql 接口
@@ -175,24 +163,23 @@ extension DBSQL {
 
 
 fileprivate extension DBSQL {
-    func deleteAllJson(_ tableName:String) -> Bool {
-        
-        let sql = "delete from \(tableName)"
-        return exec(sql)
+    /// 开启事务
+    func beginTransaction() {
+        sqlite3_exec(db, "BEGIN TRANSACTION;", nil, nil, nil)
     }
-    func deleteJson(_ tableName:String,keys:[String],values:[Any]) -> Bool {
+    /// 提交事务
+    func commitTransaction() {
+        sqlite3_exec(db, "COMMIT TRANSACTION;", nil, nil, nil)
+    }
+   
+    
+    func deleteJson(_ tableName:String,_ condition:String) -> Bool {
         
-        
-        if keys.count != values.count {return false}
-        var kv = ""
-        for i in 0..<keys.count {
-            if kv.count == 0{
-                kv = keys[i] + " = " + "'\(values[i])'"
-            }else{
-                kv = kv + " and " + keys[i] + "'\(values[i])'"
-            }
+        if condition.count > 0 {
+            let sql = "delete from \(tableName) where \(condition)"
+            return exec(sql)
         }
-        let sql = "delete from \(tableName) where \(kv)"
+        let sql = "delete from \(tableName)"
         return exec(sql)
     }
     func insertJson(_ tableName:String,_ json:[String:Any]) -> Bool {
@@ -206,7 +193,7 @@ fileprivate extension DBSQL {
             }
             
             if values.count == 0{
-                values = "\(v)"
+                values = "'\(v)'"
             }else {
                 values = values + "," + "'\(v)'"
             }
@@ -216,19 +203,8 @@ fileprivate extension DBSQL {
         return exec(sql)
     }
     
-    func updateJson(_ tableName:String,_ keys:[String],_ values:[Any],_ json:[String:Any]) -> Bool {
+    func updateJson(_ tableName:String,_ json:[String:Any],_ condition:String) -> Bool {
         
-        var condition = ""
-        for i in 0..<keys.count {
-            if i < values.count {
-                if condition.count == 0{
-                    condition = keys[i] + " = " + "'\(values[i])'"
-                }else{
-                    condition = condition + " and " + keys[i] + "'\(values[i])'"
-                }
-            }
-            
-        }
         if condition.count > 0 {
             var kv = ""
             for (k,v) in json {
@@ -244,23 +220,16 @@ fileprivate extension DBSQL {
         return false
     }
     
-    func selectJson(_ tableName:String,_ type:JsonProtocol.Type,_ keys:[String],_ values:[Any]) -> [Any]? {
-        
-        var condition = ""
-        for i in 0..<keys.count {
-            if condition.count == 0{
-                condition = keys[i] + " = " + "'\(values[i])'"
-            }else{
-                condition = condition + " and " + keys[i] + "'\(values[i])'"
-            }
+    
+    func selectJson(_ tableName:String,_ type:JsonProtocol.Type,_ condition:String) -> [Any]? {
+        if condition.count > 0 {
+            let sql = "select * from \(tableName)  where \(condition)"
+            return query(sql)
         }
-        let sql = "select * from \(tableName)  where \(condition)"
-        return query(sql)
-    }
-    func selectAllJson(_ tableName:String) -> [Any]? {
         let sql = "select * from \(tableName)"
         return query(sql)
     }
+    
     
     
     func getList(_ data:[Any]?,_ type:JsonProtocol.Type) -> [JsonProtocol]?{
@@ -274,6 +243,7 @@ fileprivate extension DBSQL {
         if list.count == 0 {
             return nil
         }
+       
         return list
     }
     
@@ -294,7 +264,6 @@ fileprivate extension DBSQL {
 }
 
 
-
 //MARK: - 创建数据库，增删改查
 fileprivate extension DBSQL {
     
@@ -308,17 +277,17 @@ fileprivate extension DBSQL {
             print("打开数据库失败")
             return false
         }
+        
         return true
     }
     func exec(_ sql:String) -> Bool{
-        
+        var err: UnsafeMutablePointer<Int8>? = nil
         let csql = sql.cString(using: String.Encoding.utf8)
-         
-        if sqlite3_exec(db, csql, nil, nil, nil) == SQLITE_OK {
+        if sqlite3_exec(db, csql, nil, nil, &err) == SQLITE_OK {
             print("执行成功")
             return true
         }
-        print("执行失败")
+        print("执行失败error\(String(validatingUTF8:sqlite3_errmsg(db)))")
         return false
     }
     
@@ -329,6 +298,7 @@ fileprivate extension DBSQL {
             print("未准备好")
             return nil
         }
+        
         var temArr = [Any]()
         while sqlite3_step(statement) == SQLITE_ROW {
             
@@ -346,46 +316,20 @@ fileprivate extension DBSQL {
                     if let n = name{
                         print("准备好 \(n):\(value)")
                     }
-                    
                 }
-                
             }
             temArr.append(row)
-
         }
+        
+        if let st = statement {
+            sqlite3_finalize(st)
+        }
+
         
         return temArr
-        
     }
 
-    func queryValue(_ sql:String) -> Any? {
-        var statement:OpaquePointer? = nil
-        let csql = sql.cString(using: String.Encoding.utf8)
-        if sqlite3_prepare(db, csql, -1, &statement, nil) != SQLITE_OK {
-            print("未准备好")
-            return nil
-        }
-        var value:Any?
-        while sqlite3_step(statement) == SQLITE_ROW {
-            
-            let columns = sqlite3_column_count(statement)
-                            
-            for i in 0..<columns {
-                let type = sqlite3_column_type(statement, i)
-                let chars = UnsafePointer<CChar>(sqlite3_column_name(statement, i))
-                let name =  String.init(cString: chars!, encoding: String.Encoding.utf8)
-
-                if sqlite3_column_text(statement, i) != nil ,let n = name{
-                    value = String.init(cString: sqlite3_column_text(statement, i))
-                    print("准备好\(value)")
-                }
-                
-            }
-
-        }
-        return value
-        
-    }
+    
     func queryCount(_ sql:String) -> Int {
         var statement:OpaquePointer? = nil
         let csql = sql.cString(using: String.Encoding.utf8)
