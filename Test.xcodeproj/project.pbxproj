@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0040B1FD26F08A2C002B853D /* WJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0040B1FC26F08A2C002B853D /* WJSON.swift */; };
+		0040B1FD26F08A2C002B853D /* DMJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0040B1FC26F08A2C002B853D /* DMJSON.swift */; };
 		0040B20126F08A47002B853D /* DBSQL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0040B20026F08A47002B853D /* DBSQL.swift */; };
 		0073952927001246000AB73E /* JSONWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0073952827001246000AB73E /* JSONWrapper.swift */; };
 		0073952B27001252000AB73E /* DBWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0073952A27001252000AB73E /* DBWrapper.swift */; };
@@ -41,7 +41,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0040B1FC26F08A2C002B853D /* WJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WJSON.swift; sourceTree = "<group>"; };
+		0040B1FC26F08A2C002B853D /* DMJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DMJSON.swift; sourceTree = "<group>"; };
 		0040B20026F08A47002B853D /* DBSQL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSQL.swift; sourceTree = "<group>"; };
 		0073952827001246000AB73E /* JSONWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONWrapper.swift; sourceTree = "<group>"; };
 		0073952A27001252000AB73E /* DBWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBWrapper.swift; sourceTree = "<group>"; };
@@ -118,7 +118,7 @@
 				0073952C2700126E000AB73E /* MemoryWrapper.swift */,
 				0073952A27001252000AB73E /* DBWrapper.swift */,
 				0040B20026F08A47002B853D /* DBSQL.swift */,
-				0040B1FC26F08A2C002B853D /* WJSON.swift */,
+				0040B1FC26F08A2C002B853D /* DMJSON.swift */,
 				00BAA941271139A1003EDE76 /* Coroutine.swift */,
 				009EE08E26AFED5F00365999 /* Main.storyboard */,
 				009EE09126AFED6200365999 /* Assets.xcassets */,
@@ -279,7 +279,7 @@
 			files = (
 				009EE08D26AFED5F00365999 /* ViewController.swift in Sources */,
 				0073952D2700126E000AB73E /* MemoryWrapper.swift in Sources */,
-				0040B1FD26F08A2C002B853D /* WJSON.swift in Sources */,
+				0040B1FD26F08A2C002B853D /* DMJSON.swift in Sources */,
 				0073952B27001252000AB73E /* DBWrapper.swift in Sources */,
 				0073952927001246000AB73E /* JSONWrapper.swift in Sources */,
 				009EE08926AFED5F00365999 /* AppDelegate.swift in Sources */,

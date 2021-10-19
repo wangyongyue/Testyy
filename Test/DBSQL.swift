@@ -8,13 +8,17 @@
 import UIKit
 import SQLite3
 let sql_queue = DispatchQueue(label: "com.sql.queue") //同步队列
+let sql_log_key = "sql_log_key"
 class DBSQL {
     private var db:OpaquePointer?
     private static let instance = DBSQL()
     let lock = NSLock()
 
     init() {
-        open()
+       let isOpen =  open()
+        if isOpen {
+            print("数据库打开")
+        }
     }
     
 }
@@ -88,19 +92,7 @@ extension DBSQL{
         res = instance.exec(sql)
         return res
     }
-    static func paramsToKeysAndValues(_ params:[String:Any]) -> (keys:[String],values:[Any]){
-        
-        var keys = [String]()
-        var values = [Any]()
-        if params.isEmpty {
-            return (keys,values)
-        }
-        for (k,v) in params{
-            keys.append(k)
-            values.append(v)
-        }
-        return (keys,values)
-    }
+    
     static func delete(_ tableName:String,_ condition:String) -> Bool {
         var res = false
         sql_queue.sync {
@@ -109,59 +101,90 @@ extension DBSQL{
         return res
     }
     
-    static func insert(_ tableName:String,_ data:[JsonProtocol]) -> Bool {
-        
+    static func insert(_ tableName:String,_ data:[Any]) -> Bool {
+        if data.count == 0 {
+            return true
+        }
         var res = false
         sql_queue.sync {
-            instance.beginTransaction()
+            
             for item in data {
-                if let json = item.toJson() {
+                if let json = item as? [String:Any] {
                     res = instance.insertJson(tableName, json)
                 }
             }
-            instance.commitTransaction()
         }
+        
         return res
     }
     
-    static func update(_ tableName:String,_ data:[JsonProtocol],_ condition:String) -> Bool {
-        
+    static func update(_ tableName:String,_ data:[String:Any],_ condition:String) -> Bool {
         var res = false
         sql_queue.sync {
-            instance.beginTransaction()
-            for item in data {
-                if let json = item.toJson() {
-                    res = instance.updateJson(tableName,json,condition)
-                }
-            }
-            instance.commitTransaction()
-
+            res = instance.updateJson(tableName,data,condition)
         }
         return res
     }
     
    
-    static func select(_ tableName:String,_ type:JsonProtocol.Type,_ condition:String) -> [JsonProtocol]?{
-        var res:[JsonProtocol]?
+    static func select(_ tableName:String,_ condition:String) -> [Any]?{
+        var res:[Any]?
         sql_queue.sync {
-            res = instance.getList(instance.selectJson(tableName, type,condition), type)
+            res = instance.selectJson(tableName,condition)
         }
-        
         return res
     }
     
+    static func commit(){
+        instance.execLogSQL()
+    }
+    
 }
-//sql 接口
-extension DBSQL {
-    static func execSql(_ sql:String,values:[Any]) -> Bool{
-        return instance.exec(instance.replaceSql(Sql: sql, values: values))
+
+fileprivate extension DBSQL{
+    
+    func saveLogSQL(_ sql:String) {
+        print(sql)
+        if sql.count > 0 {
+            if let array = UserDefaults.standard.array(forKey: sql_log_key) as? [String] {
+                var list = array
+                if list.count >= 10 {
+                    beginTransaction()
+                    for sql in list {
+                        exec(sql)
+                    }
+                    commitTransaction()
+                    list.removeAll()
+                }
+                list.append(sql)
+                
+                UserDefaults.standard.setValue(list, forKey: sql_log_key)
+            }else {
+                UserDefaults.standard.setValue([sql], forKey: sql_log_key)
+            }
+        }
+        
+        
     }
-    static func querySql(_ sql:String,values:[Any]) -> [Any]? {
-        return instance.query(instance.replaceSql(Sql: sql, values: values))
+    func execLogSQL() {
+        
+        sql_queue.sync {
+            if let array = UserDefaults.standard.array(forKey: sql_log_key) as? [String] {
+                
+                beginTransaction()
+                for sql in array {
+                    exec(sql)
+                }
+                commitTransaction()
+                UserDefaults.standard.removeObject(forKey: sql_log_key)
+            }
+        }
     }
+    
 }
 
 
+//MARK: - 方法
 fileprivate extension DBSQL {
     /// 开启事务
     func beginTransaction() {
@@ -174,15 +197,55 @@ fileprivate extension DBSQL {
    
     
     func deleteJson(_ tableName:String,_ condition:String) -> Bool {
+        let sql = deleteSQL(tableName, condition)
+        saveLogSQL(sql)
+        return true
+    }
+    
+    func insertJson(_ tableName:String,_ json:[String:Any]) -> Bool {
+        
+        let sql = insertSQL(tableName, json)
+        saveLogSQL(sql)
+        return true
+    }
+    
+    func updateJson(_ tableName:String,_ json:[String:Any],_ condition:String) -> Bool {
+        
+        let sql = updateSQL(tableName, json, condition)
+        saveLogSQL(sql)
+        return true
+    }
+    
+    
+    func selectJson(_ tableName:String,_ condition:String) -> [Any]? {
         
         if condition.count > 0 {
+            let sql = "select * from \(tableName)  where \(condition)"
+            return query(sql)
+        }
+        let sql = "select * from \(tableName)"
+        return query(sql)
+        
+    }
+    
+    
+}
+//MARK: - SQL接口
+fileprivate extension DBSQL{
+        
+    func deleteSQL(_ tableName:String,_ condition:String) -> String {
+        if condition.count > 0 {
             let sql = "delete from \(tableName) where \(condition)"
-            return exec(sql)
+            return sql
         }
         let sql = "delete from \(tableName)"
-        return exec(sql)
+        return sql
     }
-    func insertJson(_ tableName:String,_ json:[String:Any]) -> Bool {
+    
+    func insertSQL(_ tableName:String,_ json:[String:Any]) -> String {
+        if json.isEmpty {
+            return ""
+        }
         var keys = ""
         var values = ""
         for (k,v) in json {
@@ -200,11 +263,10 @@ fileprivate extension DBSQL {
             
         }
         let sql = "insert into \(tableName) (\(keys)) values (\(values))"
-        return exec(sql)
+        return sql
     }
     
-    func updateJson(_ tableName:String,_ json:[String:Any],_ condition:String) -> Bool {
-        
+    func updateSQL(_ tableName:String,_ json:[String:Any],_ condition:String) -> String {
         if condition.count > 0 {
             var kv = ""
             for (k,v) in json {
@@ -215,52 +277,11 @@ fileprivate extension DBSQL {
                 }
             }
             let sql = "update \(tableName) set \(kv) where \(condition)"
-            return exec(sql)
+            return sql
         }
-        return false
+        return ""
     }
     
-    
-    func selectJson(_ tableName:String,_ type:JsonProtocol.Type,_ condition:String) -> [Any]? {
-        if condition.count > 0 {
-            let sql = "select * from \(tableName)  where \(condition)"
-            return query(sql)
-        }
-        let sql = "select * from \(tableName)"
-        return query(sql)
-    }
-    
-    
-    
-    func getList(_ data:[Any]?,_ type:JsonProtocol.Type) -> [JsonProtocol]?{
-        var list = [JsonProtocol]()
-        if let jsonData = data {
-            for item in jsonData {
-                let model = type.init(item as? [String:Any])
-                list.append(model)
-            }
-        }
-        if list.count == 0 {
-            return nil
-        }
-       
-        return list
-    }
-    
-}
-
-fileprivate extension DBSQL {
-    func replaceSql(Sql:String,values:[Any]) -> String {
-        var newSql = ""
-        var c = 0
-        for i in Sql {
-            if String(i) == "?" && c < values.count {
-                newSql = newSql + "'\(values[c])'"
-                c += 1
-            }
-        }
-        return newSql
-    }
 }
 
 
@@ -292,6 +313,7 @@ fileprivate extension DBSQL {
     }
     
     func query(_ sql:String) -> [Any]? {
+        print("准备好 sql--\(sql)")
         var statement:OpaquePointer? = nil
         let csql = sql.cString(using: String.Encoding.utf8)
         if sqlite3_prepare(db, csql, -1, &statement, nil) != SQLITE_OK {

@@ -9,7 +9,7 @@ import UIKit
 
 //MARK: --  简单存储
 @propertyWrapper
-class Userdefault<T> {
+struct Userdefault<T> {
     let key:String
     var defaultValue:T?
     init(_ key: String){
@@ -21,123 +21,190 @@ class Userdefault<T> {
     }
     var wrappedValue: T?{
         get {
-            if defaultValue == nil {
-                defaultValue = UserDefaults.standard.object(forKey: key) as? T
-            }
-            return defaultValue
+            return UserDefaults.standard.object(forKey: key) as? T
         }
         set {
             if let value = newValue {
                 UserDefaults.standard.setValue(value, forKey: key)
-                defaultValue = nil
-            }else{
-                UserDefaults.standard.removeObject(forKey: key)
             }
             
         }
     }
     
 }
-
-
 
 @propertyWrapper
-class Memory<T> {
-    let key:String
-    let type:(JsonProtocol.Type)?
-    var defaultValue:T?
+class Memory{
+    private var cacheTable = MemoryManager()
+    var wrappedValue:Memory{
+        get {return self}
+        set {}
+    }
     
-    init(_ key: String){
-        self.key = key
-        self.type = nil
-    }
-    init(_ key: String, _ type: JsonProtocol.Type){
-        self.key = key
-        self.type = type
-    }
+    
+}
 
-    var wrappedValue: T?{
-        get {
-            if defaultValue == nil {
-                if let ty = type {
-                    defaultValue = KVMemory.instance.get(key, ty)
-                }else{
-                    defaultValue = KVMemory.instance.get(key)
+//接口
+extension Memory {
+    
+    
+    func selectOne<T>(_ type:T.Type,_ condition:(T)->Any) -> T?{
+        if let an = analysisType(type,condition) {
+            if let item = cacheTable.selectOneFromCache(an.1) {
+                if let item = toModel(an.0, [item]){
+                    return item.first as? T
                 }
             }
-            return defaultValue
+        
         }
-        set {
-            if let value = newValue {
-                KVMemory.instance.set(key, value)
-            }
-            defaultValue = nil
-        }
+       return nil
     }
+    
+    func select<T>(_ type:T.Type,_ condition:(T)->Any) -> [T]?{
+        if let an = analysisType(type,condition) {
+            if let items = toModel(an.0, cacheTable.selectFromCache(an.1)) {
+                return items as? [T]
+            }
+        }
+        return nil
+    }
+    func selectAll<T>(_ type:T.Type) -> [T]?{
+        
+         if let t = type as? JsonProtocol.Type {
+            if let items = toModel(t, cacheTable.selectFromCache("")) {
+                if items.count > 0{
+                    return items as? [T]
+                }
+            }
+
+        }
+        
+        return nil
+    }
+    
+    @discardableResult
+    func delete<T>(_ type:T.Type,_ condition:(T)->Any) -> Bool{
+        if let an = analysisType(type,condition) {
+            return cacheTable.deleteFromCache(an.1)
+        }
+        return false
+    }
+    
+    @discardableResult
+    func insert(_ data:[JsonProtocol]) -> Bool{
+        if data.count == 0 {
+            return false
+        }
+        let array = toJson(data)
+        return cacheTable.insertFromCache(array)
+    }
+    
+    @discardableResult
+    func update<T>(_ type:T.Type,_ condition:(T)->Any,_ data:JsonProtocol) -> Bool{
+        
+        if let an = analysisType(type,condition) {
+            if let json = data.toJson() {
+                return cacheTable.updateFromCache(an.1, json)
+            }
+        }
+        return false
+    }
+    
+    
    
 }
-//数据缓存，内存中
-class KVMemory {
+
+//内存数据管理类
+class MemoryManager{
     
-    static let instance = KVMemory()
-    private var hashTable:[AnyHashable:Any]
-    init() {
-        hashTable = [AnyHashable:Any]()
-    }
-    func set<T>(_ key:AnyHashable,_ value:T){
-        var temp:Any?
-        if value is JsonProtocol {
-            
-            if let v = value as? JsonProtocol {
-                temp = v.toJson()
-            }
-        }else if value is [JsonProtocol] {
-            
-            if let v = value as? [JsonProtocol] {
-                var list = [Any]()
-                for item in v {
-                    if let json = item.toJson(){
-                        list.append(json)
-                    }
-                }
-                temp = list
-            }
-        }else if value is Date{
-            
-            if let v = value as? Date{
-                temp = v.timeIntervalSince1970
-            }
-        }else{
-            
-            temp = value
-        }
-        if let te = temp{
-            hashTable.updateValue(te, forKey: key)
-        }
-        
-    }
-    func get<T>(_ key:AnyHashable,_ type:JsonProtocol.Type) ->T?{
-        
-        let value = hashTable[key]
-        if value is [Any] {
-            return toModelArray(value as? [Any],type) as? T
-        }
-        return type.init(value as? [String:Any]) as? T
-    }
-    
-    
-    func get<T>(_ key:AnyHashable) ->T?{
-        let value = hashTable[key]
-        if T.self is Date.Type {
-            if value is Double {
-                if let v = value as? Double {
-                    return Date(timeIntervalSince1970: v)  as? T
-                }
-            }
-        }
-        
-        return value as? T
-    }
+    private var cacheTable = [Any]()
     
 }
+extension MemoryManager {
+    
+    func selectOneFromCache(_ condition:String) -> Any?{
+        if cacheTable.isEmpty {return nil}
+        for cache in cacheTable {
+            if let item = cache as? [String:Any]{
+                if expression(item, condition) {
+                    return item
+                }
+            }
+        }
+       return nil
+    }
+    func selectFromCache(_ condition:String) -> [Any]?{
+        if cacheTable.isEmpty {return nil}
+        var limit = expressionLimit(condition)
+        var array = [Any]()
+        for cache in cacheTable {
+            if let item = cache as? [String:Any]{
+                if expression(item, condition) {
+                    if limit > 0 {
+                        array.append(item)
+                        limit -= 1
+                    }
+                    
+                }
+            }
+        }
+        if array.count > 0 {
+            return array
+        }
+       return nil
+    
+    }
+    
+    @discardableResult
+    func insertFromCache(_ data:[Any]) -> Bool{
+        if data.count == 0 {
+            return true
+        }
+        for item in data {
+            cacheTable.append(item)
+        }
+        return true
+    }
+    
+    @discardableResult
+    func updateFromCache(_ condition:String,_ data:[String:Any]) -> Bool{
+        if cacheTable.isEmpty {return false}
+        var i:Int = 0
+        for cache in cacheTable {
+            if let item = cache as? [String:Any]{
+                if expression(item, condition) {
+                    var newItem = item
+                    for (key,value) in data {
+                        newItem.updateValue(value, forKey:key)
+                    }
+                    cacheTable[i] = newItem
 
+                }
+            }
+            i += 1
+        }
+        
+       return true
+    }
+    
+    @discardableResult
+    func deleteFromCache(_ condition:String) -> Bool{
+        if cacheTable.isEmpty {return false}
+        var limit = expressionLimit(condition)
+        var i:Int = 0
+        for cache in cacheTable {
+            if let item = cache as? [String:Any]{
+                if expression(item, condition) {
+                    if limit > 0 {
+                        cacheTable.remove(at: i)
+                        i -= 1
+                        limit -= 1
+                    }
+                }
+            }
+            i += 1
+        }
+        
+       return true
+    }
+}

@@ -19,7 +19,7 @@ class ViewController: UIViewController {
    
   
     private func json_run(){
-        let j = WJSON(["name":12,"age":"yyds"])
+        let j = DMJSON(["name":12,"age":"yyds"])
         
         print("json--",j.name.int)
         print("json--"+j.age.string)
@@ -28,87 +28,37 @@ class ViewController: UIViewController {
 
      
         let t = Test_user(["name":"12312313123"])
-        let t1 = Test_user(t.toJson())
-        print("地址为: \(Unmanaged<AnyObject>.passUnretained(t as! AnyObject).toOpaque())")
-        print("地址为: \(Unmanaged<AnyObject>.passUnretained(t1 as! AnyObject).toOpaque())")
+        print(t.toJson())
         print("===============")
-
-   
-        cache = t
-        print(cache?.name)
-        print("===============")
-              
-//        usersInsert.run([t])
-    
 
         t.name = "wwww"
-        usesmee = [t,t1]
+        usesmee.insert([t])
+        let userM = usesmee.select(Test_user.self) {
+            return $0
+        }
        
-        print(usesmee?.first?.name)
+        print(userM?.first?.name)
         print("===============")
         
+//        for i in 1...100 {
+//            server.insert([t])
+//        }
 //        server.insert([t])
-
-        
-        let user = server.selectOne(Test_user.self) {
-            return $0.$name == "wwww"
+//
+//        server.delete(Test_user.self) {
+//            return $0.$name == "wwww"
+//        }
+//        server.commit()
+        let userAll = server.select(Test_user.self) {
+            return $0
         }
+        print(userAll?.count)
+    
         
-        print(user?.name)
         
-        let pa = ["name":"wwww","age":"w"]
-        var array = ["name","=","wwww","and","age","=","wwww"]
-        var stack = [String]()
-        while array.count > 0 {
-            let p = array[0]
-            stack.append(p)
-            array.removeFirst()
-            if stack.count > 2 && stack[1] == "="{
-                if let p =  pa[stack[0]] {
-                    if  stack[1] == "="  && p == stack[2]{
-                        
-                        stack.removeAll()
-                        stack.append("yes")
-                    }else{
-                        stack.removeAll()
-                        stack.append("no")
-                        
-                    }
-                }else{
-                    print("no")
-                    return
-                }
-            }
-            if stack.count > 1 && stack[1] == "or" {
-                if stack[0] == "yes" {
-                    print("yes")
-                    return
-                }else {
-                    stack.removeAll()
-                }
-            }
-            if stack.count > 1 && stack[1] == "and" {
-                if stack[0] == "no" {
-                    print("no")
-                    return
-                }else {
-                    stack.removeAll()
-                }
-            }
-            if stack.count == 1 && array.count == 0{
-                if stack[0] == "yes" {
-                    print("yes")
-                    return
-                }else if stack[0] == "no"{
-                    print("no")
-                    return
-                }
-            }
-        }
+        
+        co.run()
 
-//        co.run()
-
-//        GCDTest4()
 
     }
     
@@ -117,47 +67,14 @@ class ViewController: UIViewController {
     @DBServer("Test_user")
     var server:DBServer
     
-    @Memory("users",Test_user.self)
-    var usesmee:[Test_user]?
-    
-    
-    @Memory("sdfsdf")
-    var strinssss:[Int]?
-    
-    @Memory("ca",Test_user.self)
-    var cache:Test_user?
-    
-    
-    
-    func GCDTest4() {
-        let group = DispatchGroup.init()
-        //剩余10个车位
-        let semaphore = DispatchSemaphore.init(value: 10)
-        for i in 1...100 {
-            
-            //来了一辆车，信号量减1
-            let result = semaphore.wait(timeout: .distantFuture)
-            if result == .success {
-                DispatchQueue.global().async(group: group, execute: {
-                    print("队列执行\(i)--\(Thread.current)")
-                    //模拟执行任务时间
-                    sleep(3)
-
-                    //延迟3s后,走了一辆车，信号量+1
-                    semaphore.signal()
-                })
-                
-               
-            }
-        }
-        group.wait()
-            
+    @Memory()
+    var usesmee:Memory
+        
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        print("tochsBegan")
     }
-
-   
-
+    
 }
-
 class Test_user:JsonProtocol{
     
     @DBJSON("Test_user","name")
@@ -174,7 +91,8 @@ class Test_user:JsonProtocol{
     }
     func toJson() -> [String:Any]?{
         
-        return mergeMap($name.getJson(),$age.getJson())
+        return mergeMap($name.getJson(),
+                        $age.getJson())
     }
     
 }
@@ -182,62 +100,6 @@ class Test_user:JsonProtocol{
 
 
 
-@dynamicMemberLookup
-struct Lens<T> {
-  let getter: () -> T
-  let setter: (T) -> Void
-
-  var value: T {
-    get {
-      return getter()
-    }
-    nonmutating set {
-      setter(newValue)
-    }
-  }
-
-  subscript<U>(dynamicMember keyPath: WritableKeyPath<T, U>) -> Lens<U> {
-    return Lens<U>(
-        getter: { self.value[keyPath: keyPath] },
-        setter: { self.value[keyPath: keyPath] = $0 })
-  }
-}
-
-protocol P1 {
-    func run()
-}
-protocol P2 {
-    func jump()
-}
-extension P1{
-    func run(){
-        print("p1")
-    }
-}
-extension P2{
-    func jump(){
-        print("p2")
-    }
-}
-class People:P1,P2 {
-   
-}
-
-@discardableResult
-public func GKTConfig<Object>(_ object: Object, _ config: (Object) throws -> Void) rethrows -> Object{
-    try config(object)
-    return object
-}
-
-@dynamicCallable
-struct ToyCall {
-    func dynamicallyCall<T>(withArguments:[T]){
-        print("1")
-        print(withArguments);
-
-    }
-   
-}
 @dynamicMemberLookup
 @dynamicCallable
 class JsonObject{
