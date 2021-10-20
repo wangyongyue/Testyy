@@ -9,6 +9,12 @@ import UIKit
 import Metal
 
 
+/*
+ @dynamicMemberLookup 动态属性查找，可以像解释型语言一样，动态增加class属性
+ 变量 orData 是输入的最开始的数据副本
+ 变量 cuData 是当前解析中的数据
+ DMJSON 使用链式语法解析json数据
+ */
 @dynamicMemberLookup
 class DMJSON{
     private var orData:Any?
@@ -37,8 +43,11 @@ class DMJSON{
     
 }
 
+/*
+ 对外接口，arrar, dic,int,float,double,string
+ 返回值都会默认值，不会为nil
+ */
 
-//MARK: -- 转换基本数据类型
 extension DMJSON {
     var array:[DMJSON]{
         get{
@@ -128,24 +137,37 @@ extension DMJSON {
         }
     }
 }
+/*
+ 对输入数据进行初步解析和判断
+ */
 
-//MARK: -- 类型判断解析json
 fileprivate extension DMJSON {
     func toJson(_ data:Any){
         cuData = orData
     }
+    
+    /*
+     jsonString转成json
+     */
     func stringToJson(_ data:String){
         if let value = data.data(using: .utf8) {
             orData = try? JSONSerialization.jsonObject(with: value, options: .mutableContainers)
             cuData = orData
         }
     }
+    
+    /*
+     data转成json
+     */
     func dataToJson(_ data:Data){
         orData = try? JSONSerialization.jsonObject(with: data, options: .mutableContainers)
         
         cuData = orData
     }
     
+    /*
+     如果当前数据是一个数组且属性值是int类型，当作下标解析
+     */
     func analysis(_ key:String) {
         
         if let data = cuData {

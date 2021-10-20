@@ -8,12 +8,12 @@
 import UIKit
 
 
-//MARK: --  数据库定义普通字段 和 json和model互转
+/*
+ 运算符重载
+ condition 进行字符串拼接
+ */
 extension DBJSON {
-    func run(_ a:String,_ b:Any) {
-        
-        print(a,b)
-    }
+    
     static func == (r:DBJSON,x:String) -> DBJSON{
         
         r.condition = "\(r.key) = '\(x)'"
@@ -61,9 +61,26 @@ extension DBJSON {
     }
    
 }
+/*
+ 扩展协议JsonProtocol
+ limit 可以单独使用
+ */
+extension JsonProtocol {
+    func limit(_ x:Int) -> DBJSON<String> {
+        let dj = DBJSON<String>("default")
+        dj.condition = "limit \(x)"
+        return dj
+    }
+}
 
 
-
+/*
+ @propertyWrapper 属性包装器，可以重写包装属性的setter,getter方法
+ 属性：
+ key       定义数据库字段 | 转json字段值
+ table     数据库表名
+ condition 条件语句拼接
+ */
 @propertyWrapper
 class DBJSON<T> {
     var key:String
@@ -76,45 +93,80 @@ class DBJSON<T> {
     init(_ table:String,_ key: String){
         self.key = key
         self.table = table
+        
+        /*
+         新建表，和新增数据表字段
+         */
         DBSQL.setUpTableAndKeys(table,key)
 
     }
+    /*
+     值
+     */
     var defaultValue:T?
+    
+    /*
+     setter ,getter 执行快
+     必须实现
+     */
     var wrappedValue: T?{
         
         get {return defaultValue}
         set {defaultValue = newValue}
     }
+    
+    /*
+     映射
+     可以通过 $ 美元符号访问
+     */
     var projectedValue:DBJSON{
         get{return self}
         set{}
     }
     
+    /*
+     返回当前key,和defaultValue
+     */
     func getJson() -> [String:Any]?{
         if let value = defaultValue {
             return [key:value]
         }
         return nil
     }
+    
+    /*
+     通过json赋值
+     */
     func setJson(_ json:[String:Any]?){
         defaultValue = json?[key] as? T
     }
 }
 
 
-//MARK: --  数据库增，删，改，查
 
-
+/*
+ 自定义属性包装器类
+ */
 @propertyWrapper
 class DBServer{
-    
+    /*
+     表名
+     必填
+     */
     private var table:String
+    
     init(_ table:String){
         self.table = table
-        //初始化时更新数据库
+
+        /*
+         初始化时更新数据库sql
+         */
         DBSQL.commit()
     }
    
+    /*
+     返回当前类实例，方便使用
+     */
     var wrappedValue:DBServer{
         get {return self}
         set {}
@@ -122,9 +174,18 @@ class DBServer{
     
 }
 
-//接口
+/*
+ 扩展 DBServer
+ 提供增删改查接口
+ */
 extension DBServer {
     
+    /*
+     查询单个数据
+     参数：
+     type      数据类型
+     condition 条件语句
+     */
     func selectOne<T>(_ type:T.Type,_ condition:(T)->Any) -> T?{
         if let an = analysisType(type,condition) {
         
@@ -135,6 +196,12 @@ extension DBServer {
        return nil
     }
     
+    /*
+     查询数据
+     参数：
+     type      数据类型
+     condition 条件语句
+     */
     func select<T>(_ type:T.Type,_ condition:(T)->Any) -> [T]?{
         if let an = analysisType(type,condition) {
             
@@ -145,6 +212,11 @@ extension DBServer {
         return nil
     }
     
+    /*
+     查询全部数据
+     参数：
+     type      数据类型
+     */
     func selectAll<T>(_ type:T.Type) -> [T]?{
          if let t = type as? JsonProtocol.Type {
             
@@ -156,6 +228,12 @@ extension DBServer {
         return nil
     }
     
+    /*
+     删除数据
+     参数：
+     type      数据类型
+     condition 条件语句
+     */
     @discardableResult
     func delete<T>(_ type:T.Type,_ condition:(T)->Any) -> Bool{
         if let an = analysisType(type,condition) {
@@ -164,12 +242,24 @@ extension DBServer {
         return false
     }
     
+    /*
+     新增数据
+     参数：
+     data      数据内容
+     */
     @discardableResult
     func insert(_ data:[JsonProtocol]) -> Bool{
         let array = toJson(data)
         return DBSQL.insert(table, array)
     }
     
+    /*
+     更新数据
+     参数：
+     type      数据类型
+     condition 条件语句
+     data      更新数据内容
+     */
     @discardableResult
     func update<T>(_ type:T.Type,_ condition:(T)->Any,_ data:JsonProtocol) -> Bool{
         
@@ -181,27 +271,36 @@ extension DBServer {
         return false
     }
     
+    /*
+     提交执行缓存sql
+     */
     func commit() {
         DBSQL.commit()
     }
     
+    
 }
-
-func  analysisType<T>(_ t:T.Type,_ condition:(T)->Any) -> (JsonProtocol.Type,String)? {
+/*
+ 解析泛型，和条件语句
+ 参数：
+ t      数据类型
+ condition 条件闭包，返回类型判断解析
+ */
+func analysisType<T>(_ t:T.Type,_ condition:(T)->Any) -> (JsonProtocol.Type,String)? {
     if let t1 = t as? JsonProtocol.Type {
         let ob = t1.init([:])
         let co  = condition(ob as! T)
         if let c = co as? DBJSON<String> {
-            print(c.condition)
+            DBLog(c.condition)
             return (t1,c.condition)
         }else if let c = co as? DBJSON<Int> {
-            print(c.condition)
+            DBLog(c.condition)
             return (t1,c.condition)
         }else if let c = co as? DBJSON<Float> {
-            print(c.condition)
+            DBLog(c.condition)
             return (t1,c.condition)
         }else if let c = co as? DBJSON<Double> {
-            print(c.condition)
+            DBLog(c.condition)
             return (t1,c.condition)
         }else{
             return (t1,"")
@@ -210,7 +309,11 @@ func  analysisType<T>(_ t:T.Type,_ condition:(T)->Any) -> (JsonProtocol.Type,Str
     return nil
 }
 
-
+/*
+ model数据转json
+ 参数：
+ data  数据内容
+ */
 func toJson(_ data:[JsonProtocol]) -> [Any] {
     var array = [Any]()
     for item in data {
@@ -220,6 +323,13 @@ func toJson(_ data:[JsonProtocol]) -> [Any] {
     }
     return array
 }
+
+/*
+ json数据转model
+ 参数：
+ type  数据类型
+ data  数据内容
+ */
 func toModel(_ type:JsonProtocol.Type,_ data:[Any]?) -> [JsonProtocol]?{
     if let items = data {
         var array = [JsonProtocol]()
@@ -234,8 +344,13 @@ func toModel(_ type:JsonProtocol.Type,_ data:[Any]?) -> [JsonProtocol]?{
 }
 
 
-//表达式解析
-func expressionLimit(_ condition:String) -> Int{
+
+/*
+ 表达式解析,提取limit
+ 参数：
+ condition  条件语句
+ */
+func expressionLimit(_ condition:String) -> Int?{
     
     let strs = condition.components(separatedBy: " ")
     for str in strs {
@@ -245,30 +360,70 @@ func expressionLimit(_ condition:String) -> Int{
             }
         }
     }
-    return 999999
+    return nil
 }
+/*
+ 表达式解析 三元式
+ 参数：
+ condition  条件语句
+ json       匹配数据
+ */
 func expression(_ json:[String:Any],_ condition:String) -> Bool{
     if condition.count == 0 {
         return true
     }
     let pa = json
+    
+    /*
+     通过空格分词
+     */
     let strs = condition.components(separatedBy: " ")
+    
+    /*
+     筛选生成新的分词数组
+     */
     var array = [String]()
     for str in strs {
+        
+        /*
+         limit 之后不再插入array
+         */
         if str == "limit" {
             break
         }
         array.append(str.replacingOccurrences(of: " ", with: ""))
     }
+    
+    /*
+     执行栈空间
+     */
     var stack = [String]()
+    
+    /*
+     循环分析分词数组
+     */
     while array.count > 0 {
+        
+        /*
+         从分词数组拿出收割数据放入执行栈
+         并从array中删除
+         */
         let firt = array[0]
         stack.append(firt)
         array.removeFirst()
+        
+        /*
+         如果执行栈中有三个数据，判断是不是三元式
+         得出结果 yes/no 清除栈空间，把结果推入栈底
+         */
         if stack.count > 2 && stack[1] == "="{
             if let p =  pa[stack[0]] {
                 let p1 = "\(p)"
                 let p2 = stack[2].replacingOccurrences(of: "\'", with: "")
+                
+                /*
+                 判断运算符进行判断
+                 */
                 if  stack[1] == "=" {
                     if p1 == p2 {
                         stack.removeAll()
@@ -324,36 +479,60 @@ func expression(_ json:[String:Any],_ condition:String) -> Bool{
                 }
                 
             }else{
-                print("no")
+                DBLog("no")
             }
         }
+        
+        /*
+         判断或运算
+         */
         if stack.count > 1 && stack[1] == "or" {
             if stack[0] == "yes" {
-                print("yes")
+                DBLog("yes")
                 return true
             }else {
                 stack.removeAll()
             }
+            
         }
+        
+        /*
+         判断与运算
+         */
         if stack.count > 1 && stack[1] == "and" {
             if stack[0] == "no" {
-                print("no")
+                DBLog("no")
                 return false
             }else {
                 stack.removeAll()
             }
         }
+        
+        /*
+         如果分词数据没有数据，拿到执行栈栈底结果，返回
+         */
         if stack.count == 1 && array.count == 0{
             if stack[0] == "yes" {
-                print("yes")
+                DBLog("yes")
                 return true
             }else if stack[0] == "no"{
-                print("no")
+                DBLog("no")
                 return false
             }
         }
+        
     }
     
     
     return false
+}
+
+/*
+ 打印函数
+ */
+func DBLog( _ item: Any, file : String = #file, lineNum : Int = #line) {
+    #if DEBUG
+         let fileName = (file as NSString).lastPathComponent
+         print("fileName:\(fileName) lineNum:\(lineNum) \(item)")
+    #endif
 }

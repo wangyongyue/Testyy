@@ -21,15 +21,15 @@ class ViewController: UIViewController {
     private func json_run(){
         let j = DMJSON(["name":12,"age":"yyds"])
         
-        print("json--",j.name.int)
-        print("json--"+j.age.string)
+        DBLog(j.name.int)
+        DBLog("json--"+j.age.string)
         
-        print("===============")
+        DBLog("===============")
 
      
         let t = Test_user(["name":"12312313123"])
-        print(t.toJson())
-        print("===============")
+        DBLog(t.toJson())
+        DBLog("===============")
 
         t.name = "wwww"
         usesmee.insert([t])
@@ -37,10 +37,10 @@ class ViewController: UIViewController {
             return $0
         }
        
-        print(userM?.first?.name)
-        print("===============")
+        DBLog(userM?.first?.name)
+        DBLog("===============")
         
-//        for i in 1...100 {
+//        for i in 1...10 {
 //            server.insert([t])
 //        }
 //        server.insert([t])
@@ -48,16 +48,14 @@ class ViewController: UIViewController {
 //        server.delete(Test_user.self) {
 //            return $0.$name == "wwww"
 //        }
-//        server.commit()
+        server.commit()
         let userAll = server.select(Test_user.self) {
-            return $0
+            return $0.limit(10)
         }
-        print(userAll?.count)
-    
         
-        
-        
-        co.run()
+        DBLog(userAll?.count)
+            
+//        co.run()
 
 
     }
@@ -71,7 +69,7 @@ class ViewController: UIViewController {
     var usesmee:Memory
         
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        print("tochsBegan")
+        DBLog("tochsBegan")
     }
     
 }
