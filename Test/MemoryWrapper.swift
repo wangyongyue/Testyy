@@ -12,14 +12,14 @@ import UIKit
  简单存储
  */
 @propertyWrapper
-struct Userdefault<T> {
-    let key:String
-    var defaultValue:T?
+public struct Userdefault<T> {
+    private let key:String
+    private var defaultValue:T?
     
     /*
      初始化指定key
      */
-    init(_ key: String){
+    public init(_ key: String){
         self.key = key
     }
     
@@ -27,12 +27,12 @@ struct Userdefault<T> {
      初始化指定key
      指定默认值
      */
-    init(_ key: String, _ defaultValue: T){
+    public init(_ key: String, _ defaultValue: T){
         self.key = key
         self.defaultValue = defaultValue
     }
     
-    var wrappedValue: T?{
+    public var wrappedValue: T?{
         get {
             return UserDefaults.standard.object(forKey: key) as? T
         }
@@ -51,17 +51,18 @@ struct Userdefault<T> {
  内存数据缓冲
  */
 @propertyWrapper
-class Memory{
-    private var cacheTable = MemoryManager()
-    var wrappedValue:Memory{
+public class Memory{
+    private let cacheTable = MemoryManager()
+    public var wrappedValue:Memory{
         get {return self}
         set {}
     }
+    public init(){}
 }
 
 
 
-extension Memory {
+public extension Memory {
     
     /*
      查询单个数据

@@ -13,12 +13,12 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        json_run()
+        run()
     }
    
    
   
-    private func json_run(){
+    private func run(){
         let j = DMJSON(["name":12,"age":"yyds"])
         
         DBLog(j.name.int)
@@ -55,22 +55,17 @@ class ViewController: UIViewController {
         
         DBLog(userAll?.count)
             
-//        co.run()
 
 
     }
-    
-    let co = Coroutine()
-    
+        
     @DBServer("Test_user")
     var server:DBServer
     
     @Memory()
     var usesmee:Memory
         
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        DBLog("tochsBegan")
-    }
+    
     
 }
 class Test_user:JsonProtocol{
@@ -94,6 +89,32 @@ class Test_user:JsonProtocol{
     }
     
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

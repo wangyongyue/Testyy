@@ -10,15 +10,15 @@ import UIKit
 /*
  json协议
  */
-protocol JsonProtocol {
-    init(_ data:[String:Any]?)
-    func toJson() -> [String:Any]?
+public protocol JsonProtocol {
+     init(_ data:[String:Any]?)
+     func toJson() -> [String:Any]?
 }
 
 /*
  合并多个dic
  */
-func mergeMap(_ m:[String:Any]?...) -> [String:Any]? {
+public func mergeMap(_ m:[String:Any]?...) -> [String:Any]? {
     var dic = [String:Any]()
     for item in m{
         if let it = item {

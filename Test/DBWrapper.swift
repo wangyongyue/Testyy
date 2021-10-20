@@ -12,7 +12,7 @@ import UIKit
  运算符重载
  condition 进行字符串拼接
  */
-extension DBJSON {
+public extension DBJSON {
     
     static func == (r:DBJSON,x:String) -> DBJSON{
         
@@ -65,7 +65,7 @@ extension DBJSON {
  扩展协议JsonProtocol
  limit 可以单独使用
  */
-extension JsonProtocol {
+public extension JsonProtocol {
     func limit(_ x:Int) -> DBJSON<String> {
         let dj = DBJSON<String>("default")
         dj.condition = "limit \(x)"
@@ -82,15 +82,15 @@ extension JsonProtocol {
  condition 条件语句拼接
  */
 @propertyWrapper
-class DBJSON<T> {
-    var key:String
-    var table:String?
-    var condition:String = ""
+public class DBJSON<T> {
+    private var key:String
+    private var table:String?
+    public var condition:String = ""
 
-    init(_ key: String){
+    public init(_ key: String){
         self.key = key
     }
-    init(_ table:String,_ key: String){
+    public init(_ table:String,_ key: String){
         self.key = key
         self.table = table
         
@@ -103,13 +103,13 @@ class DBJSON<T> {
     /*
      值
      */
-    var defaultValue:T?
+   private var defaultValue:T?
     
     /*
      setter ,getter 执行快
      必须实现
      */
-    var wrappedValue: T?{
+    public  var wrappedValue: T?{
         
         get {return defaultValue}
         set {defaultValue = newValue}
@@ -119,7 +119,7 @@ class DBJSON<T> {
      映射
      可以通过 $ 美元符号访问
      */
-    var projectedValue:DBJSON{
+    public var projectedValue:DBJSON{
         get{return self}
         set{}
     }
@@ -127,7 +127,7 @@ class DBJSON<T> {
     /*
      返回当前key,和defaultValue
      */
-    func getJson() -> [String:Any]?{
+    public func getJson() -> [String:Any]?{
         if let value = defaultValue {
             return [key:value]
         }
@@ -137,7 +137,7 @@ class DBJSON<T> {
     /*
      通过json赋值
      */
-    func setJson(_ json:[String:Any]?){
+    public func setJson(_ json:[String:Any]?){
         defaultValue = json?[key] as? T
     }
 }
@@ -148,14 +148,14 @@ class DBJSON<T> {
  自定义属性包装器类
  */
 @propertyWrapper
-class DBServer{
+public class DBServer{
     /*
      表名
      必填
      */
     private var table:String
     
-    init(_ table:String){
+    public init(_ table:String){
         self.table = table
 
         /*
@@ -167,7 +167,7 @@ class DBServer{
     /*
      返回当前类实例，方便使用
      */
-    var wrappedValue:DBServer{
+    public var wrappedValue:DBServer{
         get {return self}
         set {}
     }
@@ -178,7 +178,7 @@ class DBServer{
  扩展 DBServer
  提供增删改查接口
  */
-extension DBServer {
+public extension DBServer {
     
     /*
      查询单个数据
