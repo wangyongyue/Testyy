@@ -80,6 +80,7 @@ public extension Memory {
         }
        return nil
     }
+    
     /*
      查询数据
      参数：
@@ -217,6 +218,18 @@ extension MemoryManager {
             if array.count > 0 {
                 return array
             }
+        }else{
+            var array = [Any]()
+            for cache in cacheTable {
+                if let item = cache as? [String:Any]{
+                    if expression(item, condition) {
+                        array.append(item)
+                    }
+                }
+            }
+            if array.count > 0 {
+                return array
+            }
         }
         
        return nil
@@ -286,6 +299,17 @@ extension MemoryManager {
                             i -= 1
                             limit -= 1
                         }
+                    }
+                }
+                i += 1
+            }
+        }else {
+            var i:Int = 0
+            for cache in cacheTable {
+                if let item = cache as? [String:Any]{
+                    if expression(item, condition) {
+                        cacheTable.remove(at: i)
+                        i -= 1
                     }
                 }
                 i += 1

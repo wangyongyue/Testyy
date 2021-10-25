@@ -143,7 +143,8 @@ extension DMJSON {
 
 fileprivate extension DMJSON {
     func toJson(_ data:Any){
-        cuData = orData
+        orData = data
+        cuData = data
     }
     
     /*

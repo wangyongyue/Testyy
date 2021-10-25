@@ -59,7 +59,7 @@ public extension DBJSON {
         self.condition = self.condition + " limit \(x)"
         return self
     }
-   
+    
 }
 /*
  扩展协议JsonProtocol
@@ -416,7 +416,7 @@ func expression(_ json:[String:Any],_ condition:String) -> Bool{
          如果执行栈中有三个数据，判断是不是三元式
          得出结果 yes/no 清除栈空间，把结果推入栈底
          */
-        if stack.count > 2 && stack[1] == "="{
+        if stack.count > 2 {
             if let p =  pa[stack[0]] {
                 let p1 = "\(p)"
                 let p2 = stack[2].replacingOccurrences(of: "\'", with: "")
