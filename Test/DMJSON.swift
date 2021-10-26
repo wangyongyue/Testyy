@@ -49,13 +49,13 @@ class DMJSON{
  */
 
 extension DMJSON {
-    var array:[DMJSON]{
+    var array:[Any]{
         get{
-            var list = [DMJSON]()
+            var list = [Any]()
             if let data = cuData {
                 if let array = data as? [Any] {
                     for item in array{
-                        list.append(DMJSON(item))
+                        list.append(item)
                     }
                 }
             }
@@ -63,13 +63,13 @@ extension DMJSON {
             return list
         }
     }
-    var dictionary:[String:DMJSON]{
+    var dictionary:[String:Any]{
         get{
-            var dic = [String:DMJSON]()
+            var dic = [String:Any]()
             if let data = cuData {
                 if let da = data as? [String:Any] {
                     for (k,v) in da {
-                        dic[k] = DMJSON(v)
+                        dic[k] = v
                     }
                 }
             }
