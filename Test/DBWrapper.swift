@@ -14,15 +14,15 @@ import UIKit
  */
 public extension DBJSON {
     
-    static func == (r:DBJSON,x:String) -> DBJSON{
-        
-        r.condition = "\(r.key) = '\(x)'"
-        return r
+    static func == (r:DBJSON,x:String) -> DBJSON<String>{
+        let nr = DBJSON<String>(r.table,r.key)
+        nr.condition = "\(nr.key) = '\(x)'"
+        return nr
     }
-    static func == (r:DBJSON,x:Double) -> DBJSON{
-        
-        r.condition = "\(r.key) = '\(x)'"
-        return r
+    static func == (r:DBJSON,x:Double) -> DBJSON<String>{
+        let nr = DBJSON<String>(r.table,r.key)
+        nr.condition = "\(nr.key) = '\(x)'"
+        return nr
     }
     static func || (r:DBJSON,x:DBJSON) -> DBJSON{
         
@@ -35,25 +35,26 @@ public extension DBJSON {
         return r
     }
     
-    static func > (r:DBJSON,x:Double) -> DBJSON{
-        
-        r.condition = "\(r.key) > '\(x)'"
-        return r
+    static func > (r:DBJSON,x:Double) -> DBJSON<String>{
+        let nr = DBJSON<String>(r.table,r.key)
+        nr.condition = "\(nr.key) > '\(x)'"
+        return nr
     }
-    static func < (r:DBJSON,x:Double) -> DBJSON{
-        
-        r.condition = "\(r.key) < '\(x)'"
-        return r
+    static func < (r:DBJSON,x:Double) -> DBJSON<String>{
+        let nr = DBJSON<String>(r.table,r.key)
+        nr.condition = "\(nr.key) < '\(x)'"
+        return nr
     }
-    static func >= (r:DBJSON,x:Double) -> DBJSON{
+    static func >= (r:DBJSON,x:Double) -> DBJSON<String>{
+        let nr = DBJSON<String>(r.table,r.key)
+        nr.condition = "\(nr.key) >= '\(x)'"
+        return nr
         
-        r.condition = "\(r.key) >= '\(x)'"
-        return r
     }
-    static func <= (r:DBJSON,x:Double) -> DBJSON{
-        
-        r.condition = "\(r.key) <= '\(x)'"
-        return r
+    static func <= (r:DBJSON,x:Double) -> DBJSON<String>{
+        let nr = DBJSON<String>(r.table,r.key)
+        nr.condition = "\(nr.key) <= '\(x)'"
+        return nr
     }
     func limit(_ x:Int) -> DBJSON {
         self.condition = self.condition + " limit \(x)"
@@ -67,7 +68,7 @@ public extension DBJSON {
  */
 public extension JsonProtocol {
     func limit(_ x:Int) -> DBJSON<String> {
-        let dj = DBJSON<String>("default")
+        let dj = DBJSON<String>("db","default")
         dj.condition = "limit \(x)"
         return dj
     }
@@ -84,12 +85,9 @@ public extension JsonProtocol {
 @propertyWrapper
 public class DBJSON<T> {
     private var key:String
-    private var table:String?
+    private var table:String
     public var condition:String = ""
 
-    public init(_ key: String){
-        self.key = key
-    }
     public init(_ table:String,_ key: String){
         self.key = key
         self.table = table
@@ -536,3 +534,4 @@ func DBLog( _ item: Any, file : String = #file, lineNum : Int = #line) {
          print("fileName:\(fileName) lineNum:\(lineNum) \(item)")
     #endif
 }
+
