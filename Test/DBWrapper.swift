@@ -136,7 +136,25 @@ public class DBJSON<T> {
      通过json赋值
      */
     public func setJson(_ json:[String:Any]?){
-        defaultValue = json?[key] as? T
+        if let value = json?[key] as? T {
+            defaultValue = value
+        }else {
+            if let value = json?[key]{
+                if T.self is Double.Type {
+                    defaultValue = Double("\(value)") as? T
+                }else
+                if T.self is Float.Type {
+                    defaultValue = Float("\(value)") as? T
+                }else
+                if T.self is Int.Type {
+                    defaultValue = Int("\(value)") as? T
+                }else
+                if T.self is String.Type {
+                    defaultValue = "\(value)" as? T
+                }
+               
+            }
+        }
     }
 }
 
