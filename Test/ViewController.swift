@@ -34,13 +34,13 @@ class ViewController: UIViewController {
         t.name = "wwww"
         usesmee.insert([t])
         let userM = usesmee.select(Test_user.self) {
-            return $0
+            return $0.all()
         }
        
         DBLog(userM?.first?.name)
         DBLog("===============")
         
-//        for i in 1...10 {
+//        for i in 1...2 {
 //            server.insert([t])
 //        }
 //        server.insert([t])
@@ -50,7 +50,7 @@ class ViewController: UIViewController {
 //        }
         server.commit()
         let userAll = server.select(Test_user.self) {
-            return $0.limit(10)
+            return $0.all()
         }
         
         DBLog(userAll?.count)

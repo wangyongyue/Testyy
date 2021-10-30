@@ -70,7 +70,7 @@ public extension Memory {
      type      数据类型
      condition 条件语句
      */
-    func selectOne<T>(_ type:T.Type,_ condition:(T)->Any) -> T?{
+    func selectOne<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>) -> T?{
         if let an = analysisType(type,condition) {
             if let item = cacheTable.selectOneFromCache(an.1) {
                 if let item = toModel(an.0, [item]){
@@ -87,7 +87,7 @@ public extension Memory {
      type      数据类型
      condition 条件语句
      */
-    func select<T>(_ type:T.Type,_ condition:(T)->Any) -> [T]?{
+    func select<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>) -> [T]?{
         if let an = analysisType(type,condition) {
             if let items = toModel(an.0, cacheTable.selectFromCache(an.1)) {
                 return items as? [T]
@@ -121,7 +121,7 @@ public extension Memory {
      condition 条件语句
      */
     @discardableResult
-    func delete<T>(_ type:T.Type,_ condition:(T)->Any) -> Bool{
+    func delete<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>) -> Bool{
         if let an = analysisType(type,condition) {
             return cacheTable.deleteFromCache(an.1)
         }
@@ -152,7 +152,7 @@ public extension Memory {
      data      更新数据内容
      */
     @discardableResult
-    func update<T>(_ type:T.Type,_ condition:(T)->Any,_ data:JsonProtocol) -> Bool{
+    func update<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>,_ data:JsonProtocol) -> Bool{
         
         if let an = analysisType(type,condition) {
             if let json = data.toJson() {

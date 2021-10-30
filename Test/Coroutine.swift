@@ -35,7 +35,7 @@ class Coroutine {
 
               Thread.sleep(forTimeInterval: 1.0)
                 let user = self.server.selectOne(Test_user.self) {
-                    return $0
+                    return $0.all()
                 }
                 print("线程\(Thread.current)---\(i)---\(user?.name)")
 

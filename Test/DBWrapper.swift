@@ -68,8 +68,13 @@ public extension DBJSON {
  */
 public extension JsonProtocol {
     func limit(_ x:Int) -> DBJSON<String> {
-        let dj = DBJSON<String>("db","default")
+        let dj = DBJSON<String>("db","test")
         dj.condition = "limit \(x)"
+        return dj
+    }
+    func all() -> DBJSON<String> {
+        let dj = DBJSON<String>("db","test")
+        dj.condition = ""
         return dj
     }
 }
@@ -202,7 +207,7 @@ public extension DBServer {
      type      数据类型
      condition 条件语句
      */
-    func selectOne<T>(_ type:T.Type,_ condition:(T)->Any) -> T?{
+    func selectOne<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>) -> T?{
         if let an = analysisType(type,condition) {
         
             if let item = toModel(an.0, DBSQL.select(table, an.1)){
@@ -218,7 +223,7 @@ public extension DBServer {
      type      数据类型
      condition 条件语句
      */
-    func select<T>(_ type:T.Type,_ condition:(T)->Any) -> [T]?{
+    func select<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>) -> [T]?{
         if let an = analysisType(type,condition) {
             
             if let items = toModel(an.0,DBSQL.select(table, an.1)) {
@@ -251,7 +256,7 @@ public extension DBServer {
      condition 条件语句
      */
     @discardableResult
-    func delete<T>(_ type:T.Type,_ condition:(T)->Any) -> Bool{
+    func delete<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>) -> Bool{
         if let an = analysisType(type,condition) {
             return DBSQL.delete(table, an.1)
         }
@@ -277,7 +282,7 @@ public extension DBServer {
      data      更新数据内容
      */
     @discardableResult
-    func update<T>(_ type:T.Type,_ condition:(T)->Any,_ data:JsonProtocol) -> Bool{
+    func update<T>(_ type:T.Type,_ condition:(T)->DBJSON<String>,_ data:JsonProtocol) -> Bool{
         
         if let an = analysisType(type,condition) {
             if let json = data.toJson() {
@@ -302,25 +307,11 @@ public extension DBServer {
  t      数据类型
  condition 条件闭包，返回类型判断解析
  */
-func analysisType<T>(_ t:T.Type,_ condition:(T)->Any) -> (JsonProtocol.Type,String)? {
+func analysisType<T>(_ t:T.Type,_ condition:(T)->DBJSON<String>) -> (JsonProtocol.Type,String)? {
     if let t1 = t as? JsonProtocol.Type {
         let ob = t1.init([:])
         let co  = condition(ob as! T)
-        if let c = co as? DBJSON<String> {
-            DBLog(c.condition)
-            return (t1,c.condition)
-        }else if let c = co as? DBJSON<Int> {
-            DBLog(c.condition)
-            return (t1,c.condition)
-        }else if let c = co as? DBJSON<Float> {
-            DBLog(c.condition)
-            return (t1,c.condition)
-        }else if let c = co as? DBJSON<Double> {
-            DBLog(c.condition)
-            return (t1,c.condition)
-        }else{
-            return (t1,"")
-        }
+        return (t1,co.condition)
     }
     return nil
 }
